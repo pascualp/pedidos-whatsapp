@@ -227,7 +227,7 @@
     </div>
 
     <textarea id="salida" placeholder="Aquí aparecerá el pedido generado..."></textarea>
-    <div class="note">Solo se incluirán líneas con Cantidad &gt; 0 y con Formato seleccionado.</div>
+    <div class="note">Solo se incluirán líneas con Cantidad > 0 y con Formato seleccionado.</div>
   </div>
 
 <script>
@@ -273,14 +273,15 @@
   function enviarWhatsApp() {
     const txt = generarTexto();
     document.getElementById("salida").value = txt;
-    const url = "https://wa.me/?text=" + encodeURIComponent(txt);
+    const phone = "34631082980";
+    const url = "https://wa.me/" + phone + "?text=" + encodeURIComponent(txt);
     window.open(url, "_blank");
   }
 
   function limpiar() {
-    document.querySelectorAll('#tabla input[type="number"]').forEach(i => i.value = "");
+    document.querySelectorAll('#tabla input[type=\"number\"]').forEach(i => i.value = "");
     document.querySelectorAll('#tabla select').forEach(s => s.value = "");
-    document.querySelectorAll('#tabla input[type="text"]').forEach(t => t.value = "");
+    document.querySelectorAll('#tabla input[type=\"text\"]').forEach(t => t.value = "");
     document.getElementById("salida").value = "";
   }
 </script>
