@@ -273,7 +273,8 @@
   function enviarWhatsApp() {
     const txt = generarTexto();
     document.getElementById("salida").value = txt;
-    const url = "https://wa.me/?text=" + encodeURIComponent(txt);
+    const phone = "631082980";
+    const url = "https://wa.me/" + phone + "?text=" + encodeURIComponent(txt);
     window.open(url, "_blank");
   }
 
