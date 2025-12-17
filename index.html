@@ -24,12 +24,12 @@
       color: var(--text);
     }
     header, main{
-      max-width: 920px;
+      max-width: 980px;
       margin: 0 auto;
       padding: 14px;
     }
     h1{ font-size:18px; margin:0 0 6px }
-    .subtitle{ font-size:14px; color:var(--muted) }
+    .subtitle{ font-size:14px; color:var(--muted); margin:0 }
 
     .card{
       background: var(--card);
@@ -46,9 +46,6 @@
       border-radius:12px;
       border:1px solid var(--line);
     }
-
-    #pedido{ min-height:45vh; }
-    #obs{ min-height: 120px; }
 
     .results{
       border:1px solid var(--line);
@@ -102,6 +99,49 @@
       outline: 2px solid rgba(220,38,38,.15);
     }
 
+    /* === Tabla bonita en la web (SIN CÓDIGO) === */
+    .table-wrap{
+      border:1px solid var(--line);
+      border-radius:12px;
+      overflow:hidden;
+      background:#fff;
+    }
+    .table-scroll{
+      max-height: 52vh;
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width: 720px;
+    }
+    thead th{
+      position: sticky;
+      top: 0;
+      background: #f8fafc;
+      z-index: 1;
+      font-size: 13px;
+      text-align:left;
+      color: var(--muted);
+      border-bottom:1px solid var(--line);
+      padding:10px;
+      white-space:nowrap;
+    }
+    tbody td{
+      border-bottom:1px solid var(--line);
+      padding:10px;
+      vertical-align:top;
+      font-size:14px;
+    }
+    tbody tr:last-child td{ border-bottom:none; }
+    .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+    }
+    .muted{ color: var(--muted); font-size: 13px; }
+
+    #obs{ min-height: 120px; }
     @media (max-width: 768px){
       #obs{ min-height: 72px; }
     }
@@ -111,7 +151,7 @@
 <body>
 <header>
   <h1>Pedido — Cliente 4544</h1>
-  <p class="subtitle">Busca un producto, rellena cantidad y formato, y se guarda automáticamente.</p>
+  <p class="subtitle">En la web la tabla va sin código. En WhatsApp/Excel se envía con código.</p>
 </header>
 
 <main>
@@ -141,7 +181,28 @@
 </section>
 
 <section class="card">
-  <textarea id="pedido" readonly placeholder="Aquí verás el texto exacto que se enviará por WhatsApp."></textarea>
+  <div class="muted" style="margin-bottom:10px">
+    Vista previa del pedido (ordenada). WhatsApp se envía con TABs para poder pegar en Excel.
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:90px">Cantidad</th>
+            <th style="width:90px">Formato</th>
+            <th>Descripción</th>
+            <th style="width:260px">Observaciones</th>
+          </tr>
+        </thead>
+        <tbody id="pedidoTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- texto real que se envía (oculto para no molestar) -->
+  <textarea id="pedidoText" readonly style="position:absolute; left:-9999px; top:-9999px;"></textarea>
 
   <div class="actions">
     <button class="btn good" id="wa">Enviar por WhatsApp</button>
@@ -484,17 +545,12 @@ function parseCatalog(raw){
   raw.split(/\r?\n/).forEach(line=>{
     const t = line.trim();
     if(!t) return;
-
     const parts = t.split(/\t+/);
     if(parts.length >= 2){
       const c = parts[0].trim();
       const d = parts.slice(1).join(" ").trim();
       if(c && d) items.push({c, d});
-      return;
     }
-    const m = t.match(/^(\S+)\s+(.*)$/);
-    if(!m) return;
-    items.push({ c: m[1], d: m[2].trim() });
   });
   return items;
 }
@@ -502,12 +558,10 @@ const ARTICULOS = parseCatalog(CATALOGO_RAW);
 
 /* === ESTADO === */
 let pedido = [];          // {c,d,q,f,o}
-let actual = null;        // {c,d}
-let editingDirty = false;
+let actual = null;
 let autosaveTimer = null;
 
-/* === DOM === */
-const search = document.getElementById("search");
+/* DOM */
 const results = document.getElementById("results");
 const selected = document.getElementById("selected");
 const selCode = document.getElementById("selCode");
@@ -515,24 +569,15 @@ const selDesc = document.getElementById("selDesc");
 const qty = document.getElementById("qty");
 const fmt = document.getElementById("fmt");
 const obs = document.getElementById("obs");
-const txt = document.getElementById("pedido");
 const status = document.getElementById("status");
-const btnCancelEdit = document.getElementById("cancelEdit");
+const pedidoTableBody = document.getElementById("pedidoTableBody");
+const pedidoText = document.getElementById("pedidoText");
 
 /* Utils */
-function cleanCell(s){
-  return String(s ?? "").replace(/\t/g," ").replace(/\r?\n/g," ").trim();
-}
-function clearFieldErrors(){
-  qty.classList.remove("field-error");
-  fmt.classList.remove("field-error");
-}
-function markDirty(){
-  editingDirty = true;
-}
-function isComplete(){
-  return !!(cleanCell(qty.value) && cleanCell(fmt.value));
-}
+function cleanCell(s){ return String(s ?? "").replace(/\t/g," ").replace(/\r?\n/g," ").trim(); }
+function clearFieldErrors(){ qty.classList.remove("field-error"); fmt.classList.remove("field-error"); }
+function isComplete(){ return !!(cleanCell(qty.value) && cleanCell(fmt.value)); }
+
 function showNeedComplete(){
   status.textContent = "⚠️ Completa Cantidad y Formato antes de seguir.";
   status.className = "status bad";
@@ -543,7 +588,7 @@ function showNeedComplete(){
   if(!cleanCell(qty.value)) qty.focus(); else fmt.focus();
 }
 
-/* TSV WhatsApp */
+/* WhatsApp: CON CÓDIGO (para Excel) */
 function buildMessage(){
   const lines = [];
   lines.push(["Cantidad","Formato","Código","Descripción","Observaciones"].join(TAB));
@@ -560,14 +605,30 @@ function buildMessage(){
   lines.push(LINK);
   return lines.join("\n");
 }
-function renderPedido(){
-  txt.value = pedido.length ? buildMessage() : "";
+
+/* Tabla web SIN CÓDIGO */
+function renderTable(){
+  pedidoTableBody.innerHTML = "";
+  if(!pedido.length){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="4" class="muted" style="padding:14px">No hay artículos añadidos todavía.</td>`;
+    pedidoTableBody.appendChild(tr);
+    return;
+  }
+  pedido.forEach(p=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="mono">${cleanCell(p.q)}</td>
+      <td>${cleanCell(p.f)}</td>
+      <td>${cleanCell(p.d)}</td>
+      <td>${cleanCell(p.o||"")}</td>
+    `;
+    pedidoTableBody.appendChild(tr);
+  });
 }
 
-/* Editor */
 function closeEditor(){
   actual = null;
-  editingDirty = false;
   if(autosaveTimer){ clearTimeout(autosaveTimer); autosaveTimer = null; }
   selected.style.display = "none";
   selCode.textContent = "";
@@ -580,7 +641,6 @@ function closeEditor(){
 
 function openEditor(item){
   actual = item;
-  editingDirty = false;
   if(autosaveTimer){ clearTimeout(autosaveTimer); autosaveTimer = null; }
 
   selCode.textContent = item.c;
@@ -588,23 +648,16 @@ function openEditor(item){
   selected.style.display = "block";
 
   const existing = pedido.find(p=>p.c===item.c);
-  if(existing){
-    qty.value = existing.q || "";
-    fmt.value = existing.f || "";
-    obs.value = existing.o || "";
-  }else{
-    qty.value = "";
-    fmt.value = "";
-    obs.value = "";
-  }
+  qty.value = existing ? (existing.q||"") : "";
+  fmt.value = existing ? (existing.f||"") : "";
+  obs.value = existing ? (existing.o||"") : "";
 
   clearFieldErrors();
   qty.focus();
 }
 
 function saveNow(){
-  if(!actual) return false;
-  if(!isComplete()) return false;
+  if(!actual || !isComplete()) return false;
 
   const q = cleanCell(qty.value);
   const f = cleanCell(fmt.value);
@@ -615,21 +668,24 @@ function saveNow(){
     line = { c: actual.c, d: actual.d };
     pedido.push(line);
   }
-  line.q = q;
-  line.f = f;
-  line.o = o;
+  line.q = q; line.f = f; line.o = o;
 
-  renderPedido();
+  // Orden por descripción para la tabla web (más cómodo si no se ve el código)
+  pedido.sort((a,b)=> a.d.localeCompare(b.d, "es"));
+
+  pedidoText.value = buildMessage();
+  renderTable();
+
   status.textContent = "✅ Guardado automáticamente";
   status.className = "status ok";
 
   closeEditor();
+  const search = document.getElementById("search");
   search.value = "";
   search.focus();
   return true;
 }
 
-/* Guardado automático con debounce */
 function scheduleAutosave(){
   if(!actual) return;
   if(autosaveTimer) clearTimeout(autosaveTimer);
@@ -637,16 +693,14 @@ function scheduleAutosave(){
   autosaveTimer = setTimeout(()=>{
     autosaveTimer = null;
     if(isComplete()){
-      saveNow(); // guarda y vuelve al buscador
+      saveNow();
     }else{
-      // No guarda hasta completar
       status.textContent = "Completa Cantidad y Formato para guardar.";
       status.className = "status warn";
     }
-  }, 700); // <-- aquí el “delay” para que puedas cambiar cantidad y formato sin que guarde instantáneo
+  }, 700);
 }
 
-/* Bloqueo: si intentas buscar otro sin completar, avisa */
 function blockIfIncomplete(){
   if(actual && !isComplete()){
     showNeedComplete();
@@ -658,24 +712,26 @@ function blockIfIncomplete(){
 /* Inputs */
 qty.addEventListener("input", ()=>{
   qty.value = qty.value.replace(/[^0-9.,]/g, "").replace(",", ".");
-  markDirty(); clearFieldErrors(); scheduleAutosave();
+  clearFieldErrors();
+  scheduleAutosave();
 });
 fmt.addEventListener("change", ()=>{
-  markDirty(); clearFieldErrors(); scheduleAutosave();
+  clearFieldErrors();
+  scheduleAutosave();
 });
-obs.addEventListener("input", ()=>{
-  markDirty(); scheduleAutosave();
-});
+obs.addEventListener("input", scheduleAutosave);
 
 /* Cancelar */
-btnCancelEdit.onclick = ()=>{
+document.getElementById("cancelEdit").onclick = ()=>{
   closeEditor();
   status.textContent = "Edición cancelada";
   status.className = "status warn";
-  search.focus();
+  document.getElementById("search").focus();
 };
 
 /* Buscador */
+const search = document.getElementById("search");
+
 search.addEventListener("focus", (e)=>{
   if(blockIfIncomplete()){
     e.preventDefault();
@@ -718,12 +774,10 @@ search.oninput = ()=>{
 
 /* WhatsApp */
 document.getElementById("wa").onclick=()=>{
-  // si está editando algo y está completo, guardamos antes de enviar
   if(actual){
     if(isComplete()) saveNow();
     else { showNeedComplete(); return; }
   }
-
   if(!pedido.length){
     status.textContent = "Pedido vacío";
     status.className = "status warn";
@@ -740,15 +794,17 @@ document.getElementById("clear").onclick=()=>{
     else { showNeedComplete(); return; }
   }
   pedido = [];
-  renderPedido();
+  closeEditor();
   status.textContent="Pedido limpiado";
   status.className = "status warn";
+  pedidoText.value = "";
+  renderTable();
   search.value="";
   search.focus();
 };
 
 /* INIT */
-renderPedido();
+renderTable();
 </script>
 </body>
 </html>
