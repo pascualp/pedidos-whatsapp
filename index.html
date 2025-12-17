@@ -111,7 +111,7 @@
 <body>
 <header>
   <h1>Pedido — Cliente 4544</h1>
-  <p class="subtitle">Busca un producto, rellena los datos y se guardará.</p>
+  <p class="subtitle">Busca un producto, rellena cantidad y formato, y se guarda automáticamente.</p>
 </header>
 
 <main>
@@ -131,6 +131,10 @@
       <option value="ud">ud</option>
     </select>
     <textarea id="obs" placeholder="Observaciones (opcional)"></textarea>
+
+    <div class="actions">
+      <button class="btn danger" id="cancelEdit">Cancelar edición</button>
+    </div>
   </div>
 
   <div id="status" class="status"></div>
@@ -155,323 +159,323 @@ const TAB = "\t";
 
 /* === CATÁLOGO COMPLETO === */
 const CATALOGO_RAW = `
-343 MINI ESPARRAGO
-468 BROTES RADICHIO
-5000 MANZANA ROYAL GALA 24
-5570 MANZANA STARKING 24
-3580 MELON GALIA
-7790 SANDIA MALLORCA
-5571 MANZANA STARKING 20
-3281 COCO DE AGUA
-9091 ALFALFA KILO
-5502 CAQUI PERSIMON
-5562 MANZANA GRAN SMITH 20
-3592 NECTARINA 20
-9943 PIÑA AVION CAJA
-4793 SANDIA NEGRA SIN PEPITA
-6004 PERA BLANQUILLA 20
-3584 MELON ERIZO MALLORCA
-9015 ALGA SALICORNIA - ESPARRAGO DE MAR
-1065 FRUTA RODAJAS - TROCEADAS
-2576 MELOCOTON AMARILLO 26
-7578 MELON PIEL DE SAPO MALLORCA
-10 ACELGA MALLORCA
-20 LIMAS
-30 BERROS
-40 MENTA MANOJO
-50 APIO MANOJO VERDE MALLORCA
-60 HIERBA BUENA MANOJO MALLORCA
-70 ALBAHACA MANOJO
-35 ENELDO FRESCO MANOJO
-55 CEBOLLINO MANOJO MALLORCA
-65 RADICCIO
-36 ENELDO MALLORCA
-66 CHALOTA
-47 AJOS TIERNOS
-67 CHALOTA PELADA
-500 LAUREL MANOJO MALLORCA
-800 SOFRITOS MANOJO MALLORCA
-910 REMOLACHA FRESCA
-420 ICEBERG CORTADA 20 MM 1KG
-520 NAPICOL
-230 CEBOLLA COMÚN
-830 RABANITOS MANOJO
-840 SOPAS MALLORCA
-450 HIERBAS CARACOLES MALLORCA
-360 COLIFLOR MALLORCA
-460 OREGANO BOLSA 1 KG
-670 PEREJIL MANOJO MALLORCA
-380 ESPINACAS MALLORCA
-780 PUERROS MALLORCA
-801 CEBOLLETAS MALLORCA
-231 CEBOLLA BLANCA
-831 RABANITO HOLANDES
-451 ROMERO MALLORCA
-671 PERIFOLLO MANOJO MALLORCA
-481 ICEBERG 250G FLORET
-681 PATATA LAVADA 25 Kg.
-691 PATATA JUMBO 25 Kg.
-482 RUCULA BARQUETA 150G FLORET
-682 PATATA PASTA BLANCA 25 Kg.
-782 PUERRO GORDO EXTRA
-692 PATATA BLANCA 5 Kg. MALLORCA
-433 ENSALADA MEZCLUM FLORET 500 GR. 4 ING
-463 RUCULA GRANEL 1 Kg.
-473 GOURMET ENSALADA 175G FLORET
-493 ENSALADA MEZCLUM MIXTURA FLORET
-693 PATATA ROJA
-804 HUEVOS CAMPEROS
-234 CEBOLLA PELADA MALLORCA
-834 RABANO BLANCO DAIKON
-344 ESPARRAGOS VERDES GORDOS
-454 CILANTRO MANOJO MALLORCA
-694 PATATA MORADA
-405 ESCAROLA FRISE
-805 HUEVOS XL
-235 CEBOLLA MORADA
-835 RABANOS MALLORCA
-445 ENSALADA MEZCLUM MEDITERRANEA 500Gr.FLORET
-455 ROMANESCO
-385 ESPINACA HOJAS 250G FLORET
-695 PATATO MALLORCA
-406 ESCAROLAS MALLORCA
-706 PATATA AGRIA PELADA
-806 HUEVOS ESTUCHADOS
-456 GERMINADO DE ALFALFA
-696 PATATO PELADO 10 kg MALLORCA
-807 HUEVOS L
-447 ENSALADA MEZCLUM 1 Kg.(8 ingred)
-457 BROTES MIZUNA
-477 BERROS FLORET 125G
-497 SALVIA MALLORCA
-697 PATATA AGRIA ESPECIAL FREIR
-808 HUEVOS CODORNIZ
-518 NABOS POR KG.
-458 FLOR DE HIELO - BROCOLI
-488 CANONIGO BARQUETA DE 100G FLORET
-498 OREGANO (MEJORANA) MJ MALLORCA
-698 PATATA PELADA DADOS - CUADROS MALLORCA
-809 HUEVOS M
-439 PACHOE x kgs
-459 BROTES DE MOSTAZA
-469 REMOLACHA AMARILLA
-499 TOMILLO MANOJO MALLORCA
-699 PATATA PARMENTINE
-6200 PERA ERCOLINA
-3400 ENDIVIA BELGA BANDEJA
-6400 PERA CONFERENCIA 26
-5500 CAQUIS MALLORCA
-3600 NARANJA ZUMO
-2010 GERMINADO DE RABANO
-9010 FLOR DE CALABACIN
-1210 CEREZAS
-1410 FRESAS MALLORCA
-1510 GIRGOLAS
-4510 MANGOS
-1710 PLATANO BAN
-9910 YUCA
-3420 GRANADAS IMPORTACION
-3520 COGOLLOS DE TUDELA
-9520 LECHUGA ROMANA MALLORCA
-1620 SETAS
-4720 PIMIENTO ROJO PRIMERA
-1630 GUISANTES
-3630 NARANJA HOJA MALLORCA
-4730 MINI PIMIENTO
-9050 HOJA DE OSTRA
-3550 MAIZ COCIDO
-3750 REMOLACHA COCIDA
-1060 ALCACHOFA
-9060 MICRO MEZCLUM FLOR BANDEJA 60GR
-1160 CALABAZA MALLORCA
-4260 CHIRIMOLLAS
-1460 HIGOS FRESCOS
-9660 PEPINOS
-4860 TIRABEQUES
-9960 GARRAFA SUC LLIMONA 5L
-1070 ALBARICOQUE
-3470 HINOJO RAIZ
-2570 MELOCOTON ROJO 24
-3080 APIO BLANCO
-4180 CALABACIN NEGRO
-3280 COCOS
-4480 JUDIA ANCHA
-1980 ZANAHORIA kilos
-9090 SOJA KILO
-3590 NECTARINA 24
-3790 PARAGUAYOS
-4790 SANDIA RAYADA - NEGRA
-1990 MINI ZANAHORIA NEGRA
-1 OTROS/VARIOS
-2001 GERMINADOS CEBOLLA
-5001 MANZANA ROYAL GALA 24-26
-6001 PERA BLANQUILLA 26
-9001 TOMATE CHERRY BANDEJAS 250 GR
-9101 ZANAHORIA AMARILLA
-6401 PERA CONFERENCIA 24
-3601 NARANJA VALENCIA
-9801 TOMATE NEGRO (KUMATO)
-2011 GERMINADO DE PUERRO
-9011 NARANJA DE LA CHINA (KUMQUAT) x caja
-1511 GIRGOLAS BANDEJA
-4511 MANGO AVION X CAJA
-9911 TOMATE RAF
-9021 FRUTA DE LA PASION CAJA
-3521 LECHUGA ICEBERG
-1621 SETAS PICORNELL
-3041 AJOS FLOR
-5041 MANZANA PINK LADY Calibre 20
-4141 BONIATO BLANCO
-1241 CHAMPIÑON MALLORCA
-3541 LIMON EXTRA
-9051 MICRO MEZCLUM
-3551 MAIZ MAZORCAS
-3651 ÑORAS KILOS
-9061 MINI PUERRO
-9661 PEPINO HOLANDES
-3761 POMELO ROJO
-3961 UVA ROSADA RED GLOBE
-3371 DATIL RAMA
-3471 HINOJO HOJA MANOJO MALLORCA
-2571 MELOCOTON ROJO 26
-9971 KALE
-4181 CALABACIN BLANCO
-3581 MELON MARINA MALLORCA
-1881 TOMATE RAMILLETE SUELTO MALLORCA
-6981 PATATA PELADA ENTERA MALLORCA
-3591 NECTARINA 24 - 26
-3691 PATATO PRECOCINADO
-3791 PAPAYAS
-9991 GERMINADO DE SOJA
-2002 SHISO - SAKURA (GERMINADOS)(CAJA)
-5002 MANZANA ROYAL GALA 20
-6002 PERA BLANQUILLA 32
-9002 FLOR COMESTIBLE
-3302 COL REPOLLO
-3402 ENDIVIA ROJA
-6402 PERA CONFERENCIA 20
-9902 TOMATE CORAZON DE BUEY
-9012 CARAMBOLAS CAJA
-3512 KIWIS ITALIA
-9912 HOJA ROBLE VERDE MALLORCA
-3022 AGUACATES CAJA (TROPS O SIMILAR)
-2522 LECHUGA TROCADERO MALLORCA
-1622 SETAS SIICHIS-TAKE
-9032 PITAHAYA CAJA - FRUTA DEL DRAGON
-1232 CEBOLLA MORADA PELADA
-3042 AJO PELADO
-5042 MANZANA PINK LADY Calibre 26
-4142 BATATA
-1242 CHAMPIÑON PORTOBELLO
-9052 TAMARINDO
-3252 CIRUELA BLANCA
-3552 MINI MAZORCA
-9062 MINI REMOLACHA
-4862 TIRABEQUES MINI CAJA
-3962 UVA NEGRA SIN PEPITA
-3472 RAIZ DE APIO
-1982 ZANAHORIA RALLADA IV GAMA 1Kg.
-6982 PATATA PELADA ESPAÑOLA MALLORCA
-9982 TOMATE SECO
-4792 SANDIA FASHION/BOUQUET
-2003 HOJAS DE SHISO (BANDEJAS)
-6003 PERA BLANQUILLA 24
-9003 FRAMBUESA
-3303 COL LOMBARDA
-7303 COL LOMBARDA MALLORCA
-9903 HOJAS ROBLE MALLORCA
-3513 KIWIS NUEVA ZELANDA
-3023 AGUACATES GRANEL
-4123 BERENJENA
-1723 PIMIENTO PADRON
-9033 HOJA DE PLATANO
-9043 TOMATE CHERRY PERA
-3253 CIRUELA ROJA
-5563 MANZANA GRAN SMITH 24
-1173 BIMI
-3373 DATILES SIN HUESO 5 Kg.
-3683 CLEMENTINA
-5683 MANZANA GOLDEN EXTRA
-1983 MINI ZANAHORIA
-6983 PATATA PELADA PANADERA MALLORCA
-2004 AFILA CRESS GERMINADO ACEDERA x bdjas
-9004 GROSELLA
-3604 NARANJA VALENCIA CONFECCIONADA
-8904 PUERROS HOLANDES
-9904 TOMATE SUPER EXTRA (GGG)
-3514 KIWI AMARILLO x CAJA
-9024 MARACUYA (x caja)
-4124 BERENJENA RAYADA
-9034 TOPINAMBUR
-9044 TOMATE CHERRY RAMA
-1244 CHAMPIÑON BANDEJA 350 gr
-5564 MANZANA GRAN SMITH IMPORTACION
-5684 MANZANA GOLDEN 20
-6984 PATATA PELADA ENSALADILLA MALLORCA
-2005 GERMINADO DE REMOLACHA
-9005 MORAS
-3305 COL CHINA
-9905 TOMATE EXTRA (G)
-3515 KIWI ZESPRI
-1725 GUINDILLA FRESCA VERDE - ROJA
-4725 PIMIENTO ITALIANO
-9045 TAMARILLO (CAJA)
-1245 CHAMPIÑON LAMINADO Bja 250 gr
-3745 PIÑA TROPICAL MONTE
-3455 JALAPEÑOS
-2575 MELOCOTON AMARILLO (24)
-3575 MELON BOLLO - EL ABUELO
-4485 JUDIA FINA
-5685 MANZANA GOLDEN 24
-2006 GERMINADO DE AJO
-9006 ARANDANOS
-1706 PLATANO PRIMERA
-9906 TOMATE PERA
-9026 TOMATE CHERRY AMARILLO
-9046 TOMATE CHERRY GRANEL
-3746 PIÑA COSTA RICA
-4946 UVA BLANCA SIN PEPITA
-5686 MANZANA GOLDEN 26
-9996 ESTRAGON
-2007 GERMINADO COL LOMBARDA
-9007 PHYSALIS
-1707 PLATANO MACHO
-9907 TOMATE BOLA MM
-9027 MINI CALABACIN
-4727 PIMIENTO AMARILLO
-9057 TOMATE CHERRY COCTEL
-5567 MANZANA FUJI IMPORTACION
-4477 TOMATE NATURAL RALLADO BIBERON 750GR
-3577 MELON CANTALOUP
-5577 MANZANA FUJI NACIONAL 24
-1987 ZANAHORIA PELADA ENTERA
-9987 LOLO ROSA MALLORCA
-2008 GERMINADOS DE GUISANTE - ESPARRAGO
-9908 TOMATE RAMA
-9018 LEMONGRASS (citronella)
-9918 TOMATE ROSA FEO
-9028 MINI BERENJENA
-4728 PIMIENTO BLANCO
-4948 UVA BLANCA EXTRA
-9958 ZUMOS FRUTA - VERDURA
-5568 MANZANA ROJA
-4478 TOMATE NATURAL RALLADO BIBERON 1100GR
-3578 MELON PIEL DE SAPO
-9988 LOLO VERDE MALLORCA
-2009 GERMINADO DE LENTEJA
-1409 FRESA
-9909 JENGIBRE
-3519 CORAZON DE COGOLLO
-1629 SETAS CARDO
-4729 PIMIENTO LAMUYO VERDE
-9039 MANGOSTAN CAJA
-3049 AJO NEGRO
-1249 CHAMPIÑON CR
-9959 GARRAFA SMOOTHIE DE 3 LITROS
-5569 MANZANA STARKING IMPORTACION
-3579 MELON AMARILLO
-9979 GARRAFA SUC TARONJA 5L
-7253 CIRUELA ROJA MALLORCA
+343	MINI ESPARRAGO
+468	BROTES RADICHIO
+5000	MANZANA ROYAL GALA 24
+5570	MANZANA STARKING 24
+3580	MELON GALIA
+7790	SANDIA MALLORCA
+5571	MANZANA STARKING 20
+3281	COCO DE AGUA
+9091	ALFALFA KILO
+5502	CAQUI PERSIMON
+5562	MANZANA GRAN SMITH 20
+3592	NECTARINA 20
+9943	PIÑA AVION CAJA
+4793	SANDIA NEGRA SIN PEPITA
+6004	PERA BLANQUILLA 20
+3584	MELON ERIZO MALLORCA
+9015	ALGA SALICORNIA - ESPARRAGO DE MAR
+1065	FRUTA RODAJAS - TROCEADAS
+2576	MELOCOTON AMARILLO 26
+7578	MELON PIEL DE SAPO MALLORCA
+10	ACELGA MALLORCA
+20	LIMAS
+30	BERROS
+40	MENTA MANOJO
+50	APIO MANOJO VERDE MALLORCA
+60	HIERBA BUENA MANOJO MALLORCA
+70	ALBAHACA MANOJO
+35	ENELDO FRESCO MANOJO
+55	CEBOLLINO MANOJO MALLORCA
+65	RADICCIO
+36	ENELDO MALLORCA
+66	CHALOTA
+47	AJOS TIERNOS
+67	CHALOTA PELADA
+500	LAUREL MANOJO MALLORCA
+800	SOFRITOS MANOJO MALLORCA
+910	REMOLACHA FRESCA
+420	ICEBERG CORTADA 20 MM 1KG
+520	NAPICOL
+230	CEBOLLA COMÚN
+830	RABANITOS MANOJO
+840	SOPAS MALLORCA
+450	HIERBAS CARACOLES MALLORCA
+360	COLIFLOR MALLORCA
+460	OREGANO BOLSA 1 KG
+670	PEREJIL MANOJO MALLORCA
+380	ESPINACAS MALLORCA
+780	PUERROS MALLORCA
+801	CEBOLLETAS MALLORCA
+231	CEBOLLA BLANCA
+831	RABANITO HOLANDES
+451	ROMERO MALLORCA
+671	PERIFOLLO MANOJO MALLORCA
+481	ICEBERG 250G FLORET
+681	PATATA LAVADA 25 Kg.
+691	PATATA JUMBO 25 Kg.
+482	RUCULA BARQUETA 150G FLORET
+682	PATATA PASTA BLANCA 25 Kg.
+782	PUERRO GORDO EXTRA
+692	PATATA BLANCA 5 Kg. MALLORCA
+433	ENSALADA MEZCLUM FLORET 500 GR. 4 ING
+463	RUCULA GRANEL 1 Kg.
+473	GOURMET ENSALADA 175G FLORET
+493	ENSALADA MEZCLUM MIXTURA FLORET
+693	PATATA ROJA
+804	HUEVOS CAMPEROS
+234	CEBOLLA PELADA MALLORCA
+834	RABANO BLANCO DAIKON
+344	ESPARRAGOS VERDES GORDOS
+454	CILANTRO MANOJO MALLORCA
+694	PATATA MORADA
+405	ESCAROLA FRISE
+805	HUEVOS XL
+235	CEBOLLA MORADA
+835	RABANOS MALLORCA
+445	ENSALADA MEZCLUM MEDITERRANEA 500Gr.FLORET
+455	ROMANESCO
+385	ESPINACA HOJAS 250G FLORET
+695	PATATO MALLORCA
+406	ESCAROLAS MALLORCA
+706	PATATA AGRIA PELADA
+806	HUEVOS ESTUCHADOS
+456	GERMINADO DE ALFALFA
+696	PATATO PELADO 10 kg MALLORCA
+807	HUEVOS L
+447	ENSALADA MEZCLUM 1 Kg.(8 ingred)
+457	BROTES MIZUNA
+477	BERROS FLORET 125G
+497	SALVIA MALLORCA
+697	PATATA AGRIA ESPECIAL FREIR
+808	HUEVOS CODORNIZ
+518	NABOS POR KG.
+458	FLOR DE HIELO - BROCOLI
+488	CANONIGO BARQUETA DE 100G FLORET
+498	OREGANO (MEJORANA) MJ MALLORCA
+698	PATATA PELADA DADOS - CUADROS MALLORCA
+809	HUEVOS M
+439	PACHOE x kgs
+459	BROTES DE MOSTAZA
+469	REMOLACHA AMARILLA
+499	TOMILLO MANOJO MALLORCA
+699	PATATA PARMENTINE
+6200	PERA ERCOLINA
+3400	ENDIVIA BELGA BANDEJA
+6400	PERA CONFERENCIA 26
+5500	CAQUIS MALLORCA
+3600	NARANJA ZUMO
+2010	GERMINADO DE RABANO
+9010	FLOR DE CALABACIN
+1210	CEREZAS
+1410	FRESAS MALLORCA
+1510	GIRGOLAS
+4510	MANGOS
+1710	PLATANO BAN
+9910	YUCA
+3420	GRANADAS IMPORTACION
+3520	COGOLLOS DE TUDELA
+9520	LECHUGA ROMANA MALLORCA
+1620	SETAS
+4720	PIMIENTO ROJO PRIMERA
+1630	GUISANTES
+3630	NARANJA HOJA MALLORCA
+4730	MINI PIMIENTO
+9050	HOJA DE OSTRA
+3550	MAIZ COCIDO
+3750	REMOLACHA COCIDA
+1060	ALCACHOFA
+9060	MICRO MEZCLUM FLOR BANDEJA 60GR
+1160	CALABAZA MALLORCA
+4260	CHIRIMOLLAS
+1460	HIGOS FRESCOS
+9660	PEPINOS
+4860	TIRABEQUES
+9960	GARRAFA SUC LLIMONA 5L
+1070	ALBARICOQUE
+3470	HINOJO RAIZ
+2570	MELOCOTON ROJO 24
+3080	APIO BLANCO
+4180	CALABACIN NEGRO
+3280	COCOS
+4480	JUDIA ANCHA
+1980	ZANAHORIA kilos
+9090	SOJA KILO
+3590	NECTARINA 24
+3790	PARAGUAYOS
+4790	SANDIA RAYADA - NEGRA
+1990	MINI ZANAHORIA NEGRA
+1	OTROS/VARIOS
+2001	GERMINADOS CEBOLLA
+5001	MANZANA ROYAL GALA 24-26
+6001	PERA BLANQUILLA 26
+9001	TOMATE CHERRY BANDEJAS 250 GR
+9101	ZANAHORIA AMARILLA
+6401	PERA CONFERENCIA 24
+3601	NARANJA VALENCIA
+9801	TOMATE NEGRO (KUMATO)
+2011	GERMINADO DE PUERRO
+9011	NARANJA DE LA CHINA (KUMQUAT) x caja
+1511	GIRGOLAS BANDEJA
+4511	MANGO AVION X CAJA
+9911	TOMATE RAF
+9021	FRUTA DE LA PASION CAJA
+3521	LECHUGA ICEBERG
+1621	SETAS PICORNELL
+3041	AJOS FLOR
+5041	MANZANA PINK LADY Calibre 20
+4141	BONIATO BLANCO
+1241	CHAMPIÑON MALLORCA
+3541	LIMON EXTRA
+9051	MICRO MEZCLUM
+3551	MAIZ MAZORCAS
+3651	ÑORAS KILOS
+9061	MINI PUERRO
+9661	PEPINO HOLANDES
+3761	POMELO ROJO
+3961	UVA ROSADA RED GLOBE
+3371	DATIL RAMA
+3471	HINOJO HOJA MANOJO MALLORCA
+2571	MELOCOTON ROJO 26
+9971	KALE
+4181	CALABACIN BLANCO
+3581	MELON MARINA MALLORCA
+1881	TOMATE RAMILLETE SUELTO MALLORCA
+6981	PATATA PELADA ENTERA MALLORCA
+3591	NECTARINA 24 - 26
+3691	PATATO PRECOCINADO
+3791	PAPAYAS
+9991	GERMINADO DE SOJA
+2002	SHISO - SAKURA (GERMINADOS)(CAJA)
+5002	MANZANA ROYAL GALA 20
+6002	PERA BLANQUILLA 32
+9002	FLOR COMESTIBLE
+3302	COL REPOLLO
+3402	ENDIVIA ROJA
+6402	PERA CONFERENCIA 20
+9902	TOMATE CORAZON DE BUEY
+9012	CARAMBOLAS CAJA
+3512	KIWIS ITALIA
+9912	HOJA ROBLE VERDE MALLORCA
+3022	AGUACATES CAJA (TROPS O SIMILAR)
+2522	LECHUGA TROCADERO MALLORCA
+1622	SETAS SIICHIS-TAKE
+9032	PITAHAYA CAJA - FRUTA DEL DRAGON
+1232	CEBOLLA MORADA PELADA
+3042	AJO PELADO
+5042	MANZANA PINK LADY Calibre 26
+4142	BATATA
+1242	CHAMPIÑON PORTOBELLO
+9052	TAMARINDO
+3252	CIRUELA BLANCA
+3552	MINI MAZORCA
+9062	MINI REMOLACHA
+4862	TIRABEQUES MINI CAJA
+3962	UVA NEGRA SIN PEPITA
+3472	RAIZ DE APIO
+1982	ZANAHORIA RALLADA IV GAMA 1Kg.
+6982	PATATA PELADA ESPAÑOLA MALLORCA
+9982	TOMATE SECO
+4792	SANDIA FASHION/BOUQUET
+2003	HOJAS DE SHISO (BANDEJAS)
+6003	PERA BLANQUILLA 24
+9003	FRAMBUESA
+3303	COL LOMBARDA
+7303	COL LOMBARDA MALLORCA
+9903	HOJAS ROBLE MALLORCA
+3513	KIWIS NUEVA ZELANDA
+3023	AGUACATES GRANEL
+4123	BERENJENA
+1723	PIMIENTO PADRON
+9033	HOJA DE PLATANO
+9043	TOMATE CHERRY PERA
+3253	CIRUELA ROJA
+5563	MANZANA GRAN SMITH 24
+1173	BIMI
+3373	DATILES SIN HUESO 5 Kg.
+3683	CLEMENTINA
+5683	MANZANA GOLDEN EXTRA
+1983	MINI ZANAHORIA
+6983	PATATA PELADA PANADERA MALLORCA
+2004	AFILA CRESS GERMINADO ACEDERA x bdjas
+9004	GROSELLA
+3604	NARANJA VALENCIA CONFECCIONADA
+8904	PUERROS HOLANDES
+9904	TOMATE SUPER EXTRA (GGG)
+3514	KIWI AMARILLO x CAJA
+9024	MARACUYA (x caja)
+4124	BERENJENA RAYADA
+9034	TOPINAMBUR
+9044	TOMATE CHERRY RAMA
+1244	CHAMPIÑON BANDEJA 350 gr
+5564	MANZANA GRAN SMITH IMPORTACION
+5684	MANZANA GOLDEN 20
+6984	PATATA PELADA ENSALADILLA MALLORCA
+2005	GERMINADO DE REMOLACHA
+9005	MORAS
+3305	COL CHINA
+9905	TOMATE EXTRA (G)
+3515	KIWI ZESPRI
+1725	GUINDILLA FRESCA VERDE - ROJA
+4725	PIMIENTO ITALIANO
+9045	TAMARILLO (CAJA)
+1245	CHAMPIÑON LAMINADO Bja 250 gr
+3745	PIÑA TROPICAL MONTE
+3455	JALAPEÑOS
+2575	MELOCOTON AMARILLO (24)
+3575	MELON BOLLO - EL ABUELO
+4485	JUDIA FINA
+5685	MANZANA GOLDEN 24
+2006	GERMINADO DE AJO
+9006	ARANDANOS
+1706	PLATANO PRIMERA
+9906	TOMATE PERA
+9026	TOMATE CHERRY AMARILLO
+9046	TOMATE CHERRY GRANEL
+3746	PIÑA COSTA RICA
+4946	UVA BLANCA SIN PEPITA
+5686	MANZANA GOLDEN 26
+9996	ESTRAGON
+2007	GERMINADO COL LOMBARDA
+9007	PHYSALIS
+1707	PLATANO MACHO
+9907	TOMATE BOLA MM
+9027	MINI CALABACIN
+4727	PIMIENTO AMARILLO
+9057	TOMATE CHERRY COCTEL
+5567	MANZANA FUJI IMPORTACION
+4477	TOMATE NATURAL RALLADO BIBERON 750GR
+3577	MELON CANTALOUP
+5577	MANZANA FUJI NACIONAL 24
+1987	ZANAHORIA PELADA ENTERA
+9987	LOLO ROSA MALLORCA
+2008	GERMINADOS DE GUISANTE - ESPARRAGO
+9908	TOMATE RAMA
+9018	LEMONGRASS (citronella)
+9918	TOMATE ROSA FEO
+9028	MINI BERENJENA
+4728	PIMIENTO BLANCO
+4948	UVA BLANCA EXTRA
+9958	ZUMOS FRUTA - VERDURA
+5568	MANZANA ROJA
+4478	TOMATE NATURAL RALLADO BIBERON 1100GR
+3578	MELON PIEL DE SAPO
+9988	LOLO VERDE MALLORCA
+2009	GERMINADO DE LENTEJA
+1409	FRESA
+9909	JENGIBRE
+3519	CORAZON DE COGOLLO
+1629	SETAS CARDO
+4729	PIMIENTO LAMUYO VERDE
+9039	MANGOSTAN CAJA
+3049	AJO NEGRO
+1249	CHAMPIÑON CR
+9959	GARRAFA SMOOTHIE DE 3 LITROS
+5569	MANZANA STARKING IMPORTACION
+3579	MELON AMARILLO
+9979	GARRAFA SUC TARONJA 5L
+7253	CIRUELA ROJA MALLORCA
 `;
 
 /* Parse catálogo */
@@ -480,6 +484,14 @@ function parseCatalog(raw){
   raw.split(/\r?\n/).forEach(line=>{
     const t = line.trim();
     if(!t) return;
+
+    const parts = t.split(/\t+/);
+    if(parts.length >= 2){
+      const c = parts[0].trim();
+      const d = parts.slice(1).join(" ").trim();
+      if(c && d) items.push({c, d});
+      return;
+    }
     const m = t.match(/^(\S+)\s+(.*)$/);
     if(!m) return;
     items.push({ c: m[1], d: m[2].trim() });
@@ -489,8 +501,10 @@ function parseCatalog(raw){
 const ARTICULOS = parseCatalog(CATALOGO_RAW);
 
 /* === ESTADO === */
-let pedido = []; // {c,d,q,f,o}
-let actual = null;
+let pedido = [];          // {c,d,q,f,o}
+let actual = null;        // {c,d}
+let editingDirty = false;
+let autosaveTimer = null;
 
 /* === DOM === */
 const search = document.getElementById("search");
@@ -503,48 +517,33 @@ const fmt = document.getElementById("fmt");
 const obs = document.getElementById("obs");
 const txt = document.getElementById("pedido");
 const status = document.getElementById("status");
+const btnCancelEdit = document.getElementById("cancelEdit");
 
-/* Limpieza */
+/* Utils */
 function cleanCell(s){
-  return String(s ?? "")
-    .replace(/\t/g, " ")
-    .replace(/\r?\n/g, " ")
-    .trim();
+  return String(s ?? "").replace(/\t/g," ").replace(/\r?\n/g," ").trim();
 }
-
-/* === VALIDACIÓN: no dejar “pasar” sin Cantidad + Formato === */
-function isEditingIncomplete(){
-  if(!actual) return false;
-  const q = cleanCell(qty.value);
-  const f = cleanCell(fmt.value);
-  // Si está seleccionado un producto y alguno falta -> incompleto
-  return !(q && f);
-}
-
-function showMustComplete(){
-  status.textContent = "⚠️ Completa Cantidad y Formato antes de añadir otro producto.";
-  status.className = "status bad";
-  qty.classList.toggle("field-error", !cleanCell(qty.value));
-  fmt.classList.toggle("field-error", !cleanCell(fmt.value));
-  alert("Completa Cantidad y Formato antes de añadir otro producto.");
-  if(!cleanCell(qty.value)) qty.focus();
-  else fmt.focus();
-}
-
-/* Quita estilos de error */
 function clearFieldErrors(){
   qty.classList.remove("field-error");
   fmt.classList.remove("field-error");
 }
-
-/* Cantidad: solo números (permite decimales con , o .) */
-qty.addEventListener("input", () => {
-  const cleaned = qty.value.replace(/[^0-9.,]/g, "").replace(",", ".");
-  qty.value = cleaned;
+function markDirty(){
+  editingDirty = true;
+}
+function isComplete(){
+  return !!(cleanCell(qty.value) && cleanCell(fmt.value));
+}
+function showNeedComplete(){
+  status.textContent = "⚠️ Completa Cantidad y Formato antes de seguir.";
+  status.className = "status bad";
   clearFieldErrors();
-});
+  if(!cleanCell(qty.value)) qty.classList.add("field-error");
+  if(!cleanCell(fmt.value)) fmt.classList.add("field-error");
+  alert("Completa Cantidad y Formato antes de seguir.");
+  if(!cleanCell(qty.value)) qty.focus(); else fmt.focus();
+}
 
-/* === MENSAJE TSV WhatsApp === */
+/* TSV WhatsApp */
 function buildMessage(){
   const lines = [];
   lines.push(["Cantidad","Formato","Código","Descripción","Observaciones"].join(TAB));
@@ -561,94 +560,132 @@ function buildMessage(){
   lines.push(LINK);
   return lines.join("\n");
 }
-
-/* Vista previa */
 function renderPedido(){
   txt.value = pedido.length ? buildMessage() : "";
 }
 
-/* Reset a buscador */
-function resetToSearch(){
+/* Editor */
+function closeEditor(){
   actual = null;
+  editingDirty = false;
+  if(autosaveTimer){ clearTimeout(autosaveTimer); autosaveTimer = null; }
   selected.style.display = "none";
   selCode.textContent = "";
   selDesc.textContent = "";
   qty.value = "";
   fmt.value = "";
   obs.value = "";
-  results.style.display = "none";
-  results.innerHTML = "";
+  clearFieldErrors();
+}
+
+function openEditor(item){
+  actual = item;
+  editingDirty = false;
+  if(autosaveTimer){ clearTimeout(autosaveTimer); autosaveTimer = null; }
+
+  selCode.textContent = item.c;
+  selDesc.textContent = item.d;
+  selected.style.display = "block";
+
+  const existing = pedido.find(p=>p.c===item.c);
+  if(existing){
+    qty.value = existing.q || "";
+    fmt.value = existing.f || "";
+    obs.value = existing.o || "";
+  }else{
+    qty.value = "";
+    fmt.value = "";
+    obs.value = "";
+  }
+
+  clearFieldErrors();
+  qty.focus();
+}
+
+function saveNow(){
+  if(!actual) return false;
+  if(!isComplete()) return false;
+
+  const q = cleanCell(qty.value);
+  const f = cleanCell(fmt.value);
+  const o = cleanCell(obs.value);
+
+  let line = pedido.find(p=>p.c===actual.c);
+  if(!line){
+    line = { c: actual.c, d: actual.d };
+    pedido.push(line);
+  }
+  line.q = q;
+  line.f = f;
+  line.o = o;
+
+  renderPedido();
+  status.textContent = "✅ Guardado automáticamente";
+  status.className = "status ok";
+
+  closeEditor();
   search.value = "";
   search.focus();
-  clearFieldErrors();
+  return true;
 }
 
-/* Guardar/actualizar línea SOLO si hay Cantidad+Formato */
-function saveLineIfComplete(){
+/* Guardado automático con debounce */
+function scheduleAutosave(){
   if(!actual) return;
+  if(autosaveTimer) clearTimeout(autosaveTimer);
 
-  const q = cleanCell(qty.value);
-  const f = cleanCell(fmt.value);
-
-  if(!(q && f)) return; // no guarda hasta estar completo
-
-  let line = pedido.find(p=>p.c===actual.c);
-  if(!line){
-    line = {c:actual.c, d:actual.d};
-    pedido.push(line);
-  }
-  line.q = q;
-  line.f = f;
-  line.o = cleanCell(obs.value);
-
-  status.textContent = "✅ Artículo guardado / actualizado";
-  status.className = "status ok";
-  renderPedido();
-
-  // al completar, vuelve al buscador
-  resetToSearch();
+  autosaveTimer = setTimeout(()=>{
+    autosaveTimer = null;
+    if(isComplete()){
+      saveNow(); // guarda y vuelve al buscador
+    }else{
+      // No guarda hasta completar
+      status.textContent = "Completa Cantidad y Formato para guardar.";
+      status.className = "status warn";
+    }
+  }, 700); // <-- aquí el “delay” para que puedas cambiar cantidad y formato sin que guarde instantáneo
 }
 
-fmt.addEventListener("change", () => {
-  clearFieldErrors();
-  saveLineIfComplete();
-});
-
-obs.addEventListener("input", () => {
-  clearFieldErrors();
-  // si ya está completo (q+f), permite ir actualizando observación sin bloquear
-  if(!actual) return;
-  const q = cleanCell(qty.value);
-  const f = cleanCell(fmt.value);
-  if(!(q && f)) return;
-
-  let line = pedido.find(p=>p.c===actual.c);
-  if(!line){
-    line = {c:actual.c, d:actual.d};
-    pedido.push(line);
+/* Bloqueo: si intentas buscar otro sin completar, avisa */
+function blockIfIncomplete(){
+  if(actual && !isComplete()){
+    showNeedComplete();
+    return true;
   }
-  line.q = q;
-  line.f = f;
-  line.o = cleanCell(obs.value);
+  return false;
+}
 
-  status.textContent = "✅ Observación actualizada";
-  status.className = "status ok";
-  renderPedido();
+/* Inputs */
+qty.addEventListener("input", ()=>{
+  qty.value = qty.value.replace(/[^0-9.,]/g, "").replace(",", ".");
+  markDirty(); clearFieldErrors(); scheduleAutosave();
+});
+fmt.addEventListener("change", ()=>{
+  markDirty(); clearFieldErrors(); scheduleAutosave();
+});
+obs.addEventListener("input", ()=>{
+  markDirty(); scheduleAutosave();
 });
 
-/* === BUSCADOR con BLOQUEO si hay artículo incompleto === */
+/* Cancelar */
+btnCancelEdit.onclick = ()=>{
+  closeEditor();
+  status.textContent = "Edición cancelada";
+  status.className = "status warn";
+  search.focus();
+};
+
+/* Buscador */
 search.addEventListener("focus", (e)=>{
-  if(isEditingIncomplete()){
+  if(blockIfIncomplete()){
     e.preventDefault();
-    showMustComplete();
+    search.blur();
   }
 });
 
 search.oninput = ()=>{
-  if(isEditingIncomplete()){
-    // No deja buscar si hay uno incompleto
+  if(blockIfIncomplete()){
     search.value = "";
-    showMustComplete();
     return;
   }
 
@@ -666,51 +703,27 @@ search.oninput = ()=>{
       const div=document.createElement("div");
       div.className="result-item";
       div.innerHTML=`<div class="code">${a.c}</div><div class="desc">${a.d}</div>`;
-
       div.onclick=()=>{
-        if(isEditingIncomplete()){
-          showMustComplete();
-          return;
-        }
-
-        actual=a;
-        selCode.textContent=a.c;
-        selDesc.textContent=a.d;
-        selected.style.display="block";
+        if(blockIfIncomplete()) return;
+        openEditor(a);
         results.style.display="none";
         results.innerHTML="";
         search.value="";
-
-        const existing = pedido.find(p=>p.c===a.c);
-        if(existing){
-          qty.value=existing.q || "";
-          fmt.value=existing.f || "";
-          obs.value=existing.o || "";
-        }else{
-          qty.value="";
-          fmt.value="";
-          obs.value="";
-        }
-        clearFieldErrors();
-        qty.focus();
       };
-
       results.appendChild(div);
     });
 
   results.style.display = results.children.length ? "block" : "none";
 };
 
-/* Si cambia cantidad, intenta guardar si ya está todo */
-qty.addEventListener("change", saveLineIfComplete);
-qty.addEventListener("blur", saveLineIfComplete);
-
-/* Enviar WhatsApp */
+/* WhatsApp */
 document.getElementById("wa").onclick=()=>{
-  if(isEditingIncomplete()){
-    showMustComplete();
-    return;
+  // si está editando algo y está completo, guardamos antes de enviar
+  if(actual){
+    if(isComplete()) saveNow();
+    else { showNeedComplete(); return; }
   }
+
   if(!pedido.length){
     status.textContent = "Pedido vacío";
     status.className = "status warn";
@@ -722,16 +735,20 @@ document.getElementById("wa").onclick=()=>{
 
 /* Limpiar */
 document.getElementById("clear").onclick=()=>{
+  if(actual){
+    if(isComplete()) saveNow();
+    else { showNeedComplete(); return; }
+  }
   pedido = [];
   renderPedido();
   status.textContent="Pedido limpiado";
   status.className = "status warn";
-  resetToSearch();
+  search.value="";
+  search.focus();
 };
 
 /* INIT */
 renderPedido();
-resetToSearch();
 </script>
 </body>
 </html>
