@@ -48,7 +48,6 @@
     }
 
     #pedido{ min-height:45vh; }
-
     #obs{ min-height: 120px; }
 
     .results{
@@ -98,6 +97,11 @@
     .status.warn{ color:var(--warn) }
     .status.bad{ color:var(--bad) }
 
+    .field-error{
+      border-color: var(--bad) !important;
+      outline: 2px solid rgba(220,38,38,.15);
+    }
+
     @media (max-width: 768px){
       #obs{ min-height: 72px; }
     }
@@ -107,7 +111,7 @@
 <body>
 <header>
   <h1>Pedido — Cliente 4544</h1>
-  <p class="subtitle">Busca un producto, rellena los datos y se guardará automáticamente.</p>
+  <p class="subtitle">Busca un producto, rellena los datos y se guardará.</p>
 </header>
 
 <main>
@@ -133,7 +137,6 @@
 </section>
 
 <section class="card">
-  <!-- Vista previa: es el MISMO texto que se envía por WhatsApp -->
   <textarea id="pedido" readonly placeholder="Aquí verás el texto exacto que se enviará por WhatsApp."></textarea>
 
   <div class="actions">
@@ -150,9 +153,7 @@ const WHATSAPP = "631082980";
 const LINK = "https://pascualp.github.io/pedidos-whatsapp/";
 const TAB = "\t";
 
-/* === CATÁLOGO COMPLETO (tal como me lo pegaste) ===
-   Formato por línea: CODIGO<espacio(s)>DESCRIPCION
-*/
+/* === CATÁLOGO COMPLETO === */
 const CATALOGO_RAW = `
 343 MINI ESPARRAGO
 468 BROTES RADICHIO
@@ -485,7 +486,6 @@ function parseCatalog(raw){
   });
   return items;
 }
-
 const ARTICULOS = parseCatalog(CATALOGO_RAW);
 
 /* === ESTADO === */
@@ -504,7 +504,7 @@ const obs = document.getElementById("obs");
 const txt = document.getElementById("pedido");
 const status = document.getElementById("status");
 
-/* Limpieza para no romper TSV */
+/* Limpieza */
 function cleanCell(s){
   return String(s ?? "")
     .replace(/\t/g, " ")
@@ -512,11 +512,42 @@ function cleanCell(s){
     .trim();
 }
 
-/* ✅ MENSAJE ÚNICO WhatsApp: TSV (TAB entre columnas) */
+/* === VALIDACIÓN: no dejar “pasar” sin Cantidad + Formato === */
+function isEditingIncomplete(){
+  if(!actual) return false;
+  const q = cleanCell(qty.value);
+  const f = cleanCell(fmt.value);
+  // Si está seleccionado un producto y alguno falta -> incompleto
+  return !(q && f);
+}
+
+function showMustComplete(){
+  status.textContent = "⚠️ Completa Cantidad y Formato antes de añadir otro producto.";
+  status.className = "status bad";
+  qty.classList.toggle("field-error", !cleanCell(qty.value));
+  fmt.classList.toggle("field-error", !cleanCell(fmt.value));
+  alert("Completa Cantidad y Formato antes de añadir otro producto.");
+  if(!cleanCell(qty.value)) qty.focus();
+  else fmt.focus();
+}
+
+/* Quita estilos de error */
+function clearFieldErrors(){
+  qty.classList.remove("field-error");
+  fmt.classList.remove("field-error");
+}
+
+/* Cantidad: solo números (permite decimales con , o .) */
+qty.addEventListener("input", () => {
+  const cleaned = qty.value.replace(/[^0-9.,]/g, "").replace(",", ".");
+  qty.value = cleaned;
+  clearFieldErrors();
+});
+
+/* === MENSAJE TSV WhatsApp === */
 function buildMessage(){
   const lines = [];
   lines.push(["Cantidad","Formato","Código","Descripción","Observaciones"].join(TAB));
-
   pedido.forEach(p=>{
     lines.push([
       cleanCell(p.q),
@@ -526,11 +557,8 @@ function buildMessage(){
       cleanCell(p.o || "")
     ].join(TAB));
   });
-
-  // Link al final (si no lo quieres, borra estas 2 líneas)
   lines.push("");
   lines.push(LINK);
-
   return lines.join("\n");
 }
 
@@ -539,7 +567,7 @@ function renderPedido(){
   txt.value = pedido.length ? buildMessage() : "";
 }
 
-/* Volver al buscador */
+/* Reset a buscador */
 function resetToSearch(){
   actual = null;
   selected.style.display = "none";
@@ -552,10 +580,78 @@ function resetToSearch(){
   results.innerHTML = "";
   search.value = "";
   search.focus();
+  clearFieldErrors();
 }
 
-/* Buscador */
+/* Guardar/actualizar línea SOLO si hay Cantidad+Formato */
+function saveLineIfComplete(){
+  if(!actual) return;
+
+  const q = cleanCell(qty.value);
+  const f = cleanCell(fmt.value);
+
+  if(!(q && f)) return; // no guarda hasta estar completo
+
+  let line = pedido.find(p=>p.c===actual.c);
+  if(!line){
+    line = {c:actual.c, d:actual.d};
+    pedido.push(line);
+  }
+  line.q = q;
+  line.f = f;
+  line.o = cleanCell(obs.value);
+
+  status.textContent = "✅ Artículo guardado / actualizado";
+  status.className = "status ok";
+  renderPedido();
+
+  // al completar, vuelve al buscador
+  resetToSearch();
+}
+
+fmt.addEventListener("change", () => {
+  clearFieldErrors();
+  saveLineIfComplete();
+});
+
+obs.addEventListener("input", () => {
+  clearFieldErrors();
+  // si ya está completo (q+f), permite ir actualizando observación sin bloquear
+  if(!actual) return;
+  const q = cleanCell(qty.value);
+  const f = cleanCell(fmt.value);
+  if(!(q && f)) return;
+
+  let line = pedido.find(p=>p.c===actual.c);
+  if(!line){
+    line = {c:actual.c, d:actual.d};
+    pedido.push(line);
+  }
+  line.q = q;
+  line.f = f;
+  line.o = cleanCell(obs.value);
+
+  status.textContent = "✅ Observación actualizada";
+  status.className = "status ok";
+  renderPedido();
+});
+
+/* === BUSCADOR con BLOQUEO si hay artículo incompleto === */
+search.addEventListener("focus", (e)=>{
+  if(isEditingIncomplete()){
+    e.preventDefault();
+    showMustComplete();
+  }
+});
+
 search.oninput = ()=>{
+  if(isEditingIncomplete()){
+    // No deja buscar si hay uno incompleto
+    search.value = "";
+    showMustComplete();
+    return;
+  }
+
   results.innerHTML="";
   const q = search.value.toLowerCase().trim();
   if(!q){
@@ -570,13 +666,20 @@ search.oninput = ()=>{
       const div=document.createElement("div");
       div.className="result-item";
       div.innerHTML=`<div class="code">${a.c}</div><div class="desc">${a.d}</div>`;
+
       div.onclick=()=>{
+        if(isEditingIncomplete()){
+          showMustComplete();
+          return;
+        }
+
         actual=a;
         selCode.textContent=a.c;
         selDesc.textContent=a.d;
         selected.style.display="block";
-        search.value="";
         results.style.display="none";
+        results.innerHTML="";
+        search.value="";
 
         const existing = pedido.find(p=>p.c===a.c);
         if(existing){
@@ -588,63 +691,26 @@ search.oninput = ()=>{
           fmt.value="";
           obs.value="";
         }
+        clearFieldErrors();
         qty.focus();
       };
+
       results.appendChild(div);
     });
 
   results.style.display = results.children.length ? "block" : "none";
 };
 
-/* Guardar / modificar (si repites código, modifica la línea existente) */
-function saveLine(){
-  if(!actual) return;
-  if(!qty.value || !fmt.value) return;
+/* Si cambia cantidad, intenta guardar si ya está todo */
+qty.addEventListener("change", saveLineIfComplete);
+qty.addEventListener("blur", saveLineIfComplete);
 
-  // Solo números en cantidad (mantiene decimales)
-  const qClean = qty.value.replace(/[^0-9.,]/g, "").replace(",", ".");
-  qty.value = qClean;
-
-  let line = pedido.find(p=>p.c===actual.c);
-  if(!line){
-    line = {c:actual.c, d:actual.d};
-    pedido.push(line);
-  }
-  line.q = qty.value;
-  line.f = fmt.value;
-  line.o = obs.value;
-
-  renderPedido();
-  status.textContent = "Artículo guardado / actualizado";
-  status.className = "status ok";
-
-  resetToSearch();
-}
-
-qty.addEventListener("input", saveLine);
-fmt.addEventListener("change", saveLine);
-
-/* Observaciones: actualiza sin expulsar */
-obs.addEventListener("input", () => {
-  if(!actual) return;
-  if(!qty.value || !fmt.value) return;
-
-  let line = pedido.find(p=>p.c===actual.c);
-  if(!line){
-    line = {c:actual.c, d:actual.d};
-    pedido.push(line);
-  }
-  line.q = qty.value;
-  line.f = fmt.value;
-  line.o = obs.value;
-
-  renderPedido();
-  status.textContent = "Observación actualizada";
-  status.className = "status ok";
-});
-
-/* Botones */
+/* Enviar WhatsApp */
 document.getElementById("wa").onclick=()=>{
+  if(isEditingIncomplete()){
+    showMustComplete();
+    return;
+  }
   if(!pedido.length){
     status.textContent = "Pedido vacío";
     status.className = "status warn";
@@ -654,6 +720,7 @@ document.getElementById("wa").onclick=()=>{
   location.href = `https://wa.me/${WHATSAPP}?text=` + encodeURIComponent(msg);
 };
 
+/* Limpiar */
 document.getElementById("clear").onclick=()=>{
   pedido = [];
   renderPedido();
