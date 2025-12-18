@@ -99,7 +99,6 @@
       outline: 2px solid rgba(220,38,38,.15);
     }
 
-    /* === Tabla bonita en la web (SIN CÓDIGO) === */
     .table-wrap{
       border:1px solid var(--line);
       border-radius:12px;
@@ -151,13 +150,13 @@
 <body>
 <header>
   <h1>Pedido — Cliente 4544</h1>
-  <p class="subtitle">En la web la tabla va sin código. En WhatsApp/Excel se envía con código.</p>
+  <p class="subtitle">Buscador por inicio de descripción (no por palabras internas). WhatsApp con código.</p>
 </header>
 
 <main>
 
 <section class="card">
-  <input id="search" placeholder="Buscar producto por código o descripción..." />
+  <input id="search" placeholder="Buscar por código o por inicio de descripción (min 3 letras)..." />
   <div id="results" class="results"></div>
 
   <div id="selected" class="selected">
@@ -182,7 +181,7 @@
 
 <section class="card">
   <div class="muted" style="margin-bottom:10px">
-    Vista previa del pedido (ordenada). WhatsApp se envía con TABs para poder pegar en Excel.
+    Vista previa del pedido (en la web sin código). WhatsApp se envía con código y TABs para pegar en Excel.
   </div>
 
   <div class="table-wrap">
@@ -201,9 +200,6 @@
     </div>
   </div>
 
-  <!-- texto real que se envía (oculto para no molestar) -->
-  <textarea id="pedidoText" readonly style="position:absolute; left:-9999px; top:-9999px;"></textarea>
-
   <div class="actions">
     <button class="btn good" id="wa">Enviar por WhatsApp</button>
     <button class="btn danger" id="clear">Limpiar pedido</button>
@@ -214,7 +210,7 @@
 
 <script>
 /* === CONFIG === */
-const WHATSAPP = "631082980";
+const WHATSAPP = "663336160";
 const LINK = "https://pascualp.github.io/pedidos-whatsapp/";
 const TAB = "\t";
 
@@ -315,7 +311,7 @@ const CATALOGO_RAW = `
 458	FLOR DE HIELO - BROCOLI
 488	CANONIGO BARQUETA DE 100G FLORET
 498	OREGANO (MEJORANA) MJ MALLORCA
-698	PATATA PELADA DADOS - CUADROS MALLORCA
+698	PATATA PELADA DADOS - CUADROS MALLORCA 
 809	HUEVOS M
 439	PACHOE x kgs
 459	BROTES DE MOSTAZA
@@ -562,6 +558,7 @@ let actual = null;
 let autosaveTimer = null;
 
 /* DOM */
+const search = document.getElementById("search");
 const results = document.getElementById("results");
 const selected = document.getElementById("selected");
 const selCode = document.getElementById("selCode");
@@ -571,13 +568,11 @@ const fmt = document.getElementById("fmt");
 const obs = document.getElementById("obs");
 const status = document.getElementById("status");
 const pedidoTableBody = document.getElementById("pedidoTableBody");
-const pedidoText = document.getElementById("pedidoText");
 
 /* Utils */
 function cleanCell(s){ return String(s ?? "").replace(/\t/g," ").replace(/\r?\n/g," ").trim(); }
 function clearFieldErrors(){ qty.classList.remove("field-error"); fmt.classList.remove("field-error"); }
 function isComplete(){ return !!(cleanCell(qty.value) && cleanCell(fmt.value)); }
-
 function showNeedComplete(){
   status.textContent = "⚠️ Completa Cantidad y Formato antes de seguir.";
   status.className = "status bad";
@@ -588,25 +583,17 @@ function showNeedComplete(){
   if(!cleanCell(qty.value)) qty.focus(); else fmt.focus();
 }
 
-/* WhatsApp: CON CÓDIGO (para Excel) */
 function buildMessage(){
   const lines = [];
   lines.push(["Cantidad","Formato","Código","Descripción","Observaciones"].join(TAB));
   pedido.forEach(p=>{
-    lines.push([
-      cleanCell(p.q),
-      cleanCell(p.f),
-      cleanCell(p.c),
-      cleanCell(p.d),
-      cleanCell(p.o || "")
-    ].join(TAB));
+    lines.push([cleanCell(p.q), cleanCell(p.f), cleanCell(p.c), cleanCell(p.d), cleanCell(p.o||"")].join(TAB));
   });
   lines.push("");
   lines.push(LINK);
   return lines.join("\n");
 }
 
-/* Tabla web SIN CÓDIGO */
 function renderTable(){
   pedidoTableBody.innerHTML = "";
   if(!pedido.length){
@@ -670,19 +657,15 @@ function saveNow(){
   }
   line.q = q; line.f = f; line.o = o;
 
-  // Orden por descripción para la tabla web (más cómodo si no se ve el código)
   pedido.sort((a,b)=> a.d.localeCompare(b.d, "es"));
-
-  pedidoText.value = buildMessage();
-  renderTable();
 
   status.textContent = "✅ Guardado automáticamente";
   status.className = "status ok";
 
   closeEditor();
-  const search = document.getElementById("search");
   search.value = "";
   search.focus();
+  renderTable();
   return true;
 }
 
@@ -692,9 +675,8 @@ function scheduleAutosave(){
 
   autosaveTimer = setTimeout(()=>{
     autosaveTimer = null;
-    if(isComplete()){
-      saveNow();
-    }else{
+    if(isComplete()) saveNow();
+    else{
       status.textContent = "Completa Cantidad y Formato para guardar.";
       status.className = "status warn";
     }
@@ -709,7 +691,6 @@ function blockIfIncomplete(){
   return false;
 }
 
-/* Inputs */
 qty.addEventListener("input", ()=>{
   qty.value = qty.value.replace(/[^0-9.,]/g, "").replace(",", ".");
   clearFieldErrors();
@@ -721,16 +702,18 @@ fmt.addEventListener("change", ()=>{
 });
 obs.addEventListener("input", scheduleAutosave);
 
-/* Cancelar */
 document.getElementById("cancelEdit").onclick = ()=>{
   closeEditor();
   status.textContent = "Edición cancelada";
   status.className = "status warn";
-  document.getElementById("search").focus();
+  search.focus();
 };
 
-/* Buscador */
-const search = document.getElementById("search");
+/* === BUSCADOR: SOLO PREFIJO DE DESCRIPCIÓN COMPLETA === */
+function normalize(s){
+  return String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+function isDigits(s){ return /^[0-9]+$/.test(s); }
 
 search.addEventListener("focus", (e)=>{
   if(blockIfIncomplete()){
@@ -746,33 +729,41 @@ search.oninput = ()=>{
   }
 
   results.innerHTML="";
-  const q = search.value.toLowerCase().trim();
-  if(!q){
+  const raw = search.value.trim();
+  const qn = normalize(raw);
+
+  if(qn.length < 3){
     results.style.display="none";
     return;
   }
 
-  ARTICULOS
-    .filter(a => a.c.toLowerCase().includes(q) || a.d.toLowerCase().includes(q))
-    .slice(0, 60)
-    .forEach(a=>{
-      const div=document.createElement("div");
-      div.className="result-item";
-      div.innerHTML=`<div class="code">${a.c}</div><div class="desc">${a.d}</div>`;
-      div.onclick=()=>{
-        if(blockIfIncomplete()) return;
-        openEditor(a);
-        results.style.display="none";
-        results.innerHTML="";
-        search.value="";
-      };
-      results.appendChild(div);
-    });
+  const matches = ARTICULOS
+    .filter(a=>{
+      const code = normalize(a.c);
+      const desc = normalize(a.d);
+      if(isDigits(qn)) return code.startsWith(qn);
+      return desc.startsWith(qn);
+    })
+    .sort((a,b)=> a.d.localeCompare(b.d, "es"))
+    .slice(0, 25);
+
+  matches.forEach(a=>{
+    const div=document.createElement("div");
+    div.className="result-item";
+    div.innerHTML=`<div class="code">${a.c}</div><div class="desc">${a.d}</div>`;
+    div.onclick=()=>{
+      if(blockIfIncomplete()) return;
+      openEditor(a);
+      results.style.display="none";
+      results.innerHTML="";
+      search.value="";
+    };
+    results.appendChild(div);
+  });
 
   results.style.display = results.children.length ? "block" : "none";
 };
 
-/* WhatsApp */
 document.getElementById("wa").onclick=()=>{
   if(actual){
     if(isComplete()) saveNow();
@@ -787,7 +778,6 @@ document.getElementById("wa").onclick=()=>{
   location.href = `https://wa.me/${WHATSAPP}?text=` + encodeURIComponent(msg);
 };
 
-/* Limpiar */
 document.getElementById("clear").onclick=()=>{
   if(actual){
     if(isComplete()) saveNow();
@@ -797,13 +787,11 @@ document.getElementById("clear").onclick=()=>{
   closeEditor();
   status.textContent="Pedido limpiado";
   status.className = "status warn";
-  pedidoText.value = "";
   renderTable();
   search.value="";
   search.focus();
 };
 
-/* INIT */
 renderTable();
 </script>
 </body>
