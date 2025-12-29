@@ -150,13 +150,13 @@
 <body>
 <header>
   <h1>Pedido — Cliente 4544</h1>
-  <p class="subtitle">Buscador por inicio de descripción (no por palabras internas). WhatsApp con código.</p>
+  <p class="subtitle">Buscador tolerante a errores + alias. Web sin código, WhatsApp con código.</p>
 </header>
 
 <main>
 
 <section class="card">
-  <input id="search" placeholder="Buscar por código o por inicio de descripción (min 3 letras)..." />
+  <input id="search" placeholder="Buscar por código o nombre (min 3 letras)..." />
   <div id="results" class="results"></div>
 
   <div id="selected" class="selected">
@@ -181,7 +181,7 @@
 
 <section class="card">
   <div class="muted" style="margin-bottom:10px">
-    Vista previa del pedido (en la web sin código). WhatsApp se envía con código y TABs para pegar en Excel.
+    Vista previa del pedido (web sin código). WhatsApp se envía con código y TABs para pegar en Excel.
   </div>
 
   <div class="table-wrap">
@@ -214,7 +214,25 @@ const WHATSAPP = "663336160";
 const LINK = "https://pascualp.github.io/pedidos-whatsapp/";
 const TAB = "\t";
 
-/* === CATÁLOGO COMPLETO === */
+/* === Alias/sinónimos típicos (amplía cuando detectes casos reales) === */
+const ALIASES = [
+  { from: ["mesclum","mezclun","mezclu","mezcl","mix","mixtura","mezclum"], to: "mezclum" },
+  { from: ["rucula","rúcula","rocket"], to: "rucula" },
+  { from: ["aisberg","iceberg","ice-berg"], to: "iceberg" },
+  { from: ["canonigos","canónigos","canonigo"], to: "canonigo" },
+  { from: ["patata","papas","papa"], to: "patata" },
+  { from: ["tomate","tomates"], to: "tomate" },
+  { from: ["pepino","pepin"], to: "pepino" }
+];
+
+/* Palabras comunes que NO deben dominar el buscador (evita ruido: manojo, mallorca, etc.) */
+const IGNORE_WORDS = new Set([
+  "manojo","mallorca","caja","cajas","kilo","kilos","kg","ud","unidad","unidades",
+  "bandeja","bandejas","extra","primera","importacion","importación","gr","g","mm",
+  "floret","x","por","de","la","el","y","con","sin","del","al"
+]);
+
+/* === CATÁLOGO COMPLETO (tal cual lo pasaste) === */
 const CATALOGO_RAW = `
 343	MINI ESPARRAGO
 468	BROTES RADICHIO
@@ -569,8 +587,31 @@ const obs = document.getElementById("obs");
 const status = document.getElementById("status");
 const pedidoTableBody = document.getElementById("pedidoTableBody");
 
-/* Utils */
+/* === Helpers generales === */
+function normalize(s){
+  return String(s)
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/ñ/g,"n")
+    .replace(/[^a-z0-9]+/g," ")
+    .trim();
+}
+function applyAliases(q){
+  const parts = normalize(q).split(" ").filter(Boolean);
+  const out = parts.map(w=>{
+    for(const rule of ALIASES){
+      if(rule.from.includes(w)) return rule.to;
+    }
+    return w;
+  });
+  return out.join(" ");
+}
+function tokenize(desc){
+  return normalize(desc).split(" ").filter(Boolean);
+}
 function cleanCell(s){ return String(s ?? "").replace(/\t/g," ").replace(/\r?\n/g," ").trim(); }
+function isDigits(s){ return /^[0-9]+$/.test(s); }
+
 function clearFieldErrors(){ qty.classList.remove("field-error"); fmt.classList.remove("field-error"); }
 function isComplete(){ return !!(cleanCell(qty.value) && cleanCell(fmt.value)); }
 function showNeedComplete(){
@@ -582,7 +623,44 @@ function showNeedComplete(){
   alert("Completa Cantidad y Formato antes de seguir.");
   if(!cleanCell(qty.value)) qty.focus(); else fmt.focus();
 }
+function blockIfIncomplete(){
+  if(actual && !isComplete()){
+    showNeedComplete();
+    return true;
+  }
+  return false;
+}
 
+/* Ranking */
+function score(descTokens, qTokens){
+  let s = 0;
+  for(const qt of qTokens){
+    for(const dt of descTokens){
+      if(IGNORE_WORDS.has(dt)) continue;
+      if(dt === qt) s += 60;
+      else if(dt.startsWith(qt)) s += 35;
+      else if(dt.includes(qt)) s += 10;
+    }
+  }
+  return s;
+}
+
+/* Levenshtein (solo para 1 token y solo si no hay resultados) */
+function levenshtein(a,b){
+  const m=a.length, n=b.length;
+  const dp = Array.from({length:m+1}, ()=>Array(n+1).fill(0));
+  for(let i=0;i<=m;i++) dp[i][0]=i;
+  for(let j=0;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      const cost = a[i-1]===b[j-1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost);
+    }
+  }
+  return dp[m][n];
+}
+
+/* WhatsApp: CON CÓDIGO (TAB para Excel) */
 function buildMessage(){
   const lines = [];
   lines.push(["Cantidad","Formato","Código","Descripción","Observaciones"].join(TAB));
@@ -594,6 +672,7 @@ function buildMessage(){
   return lines.join("\n");
 }
 
+/* Tabla web SIN CÓDIGO */
 function renderTable(){
   pedidoTableBody.innerHTML = "";
   if(!pedido.length){
@@ -683,14 +762,7 @@ function scheduleAutosave(){
   }, 700);
 }
 
-function blockIfIncomplete(){
-  if(actual && !isComplete()){
-    showNeedComplete();
-    return true;
-  }
-  return false;
-}
-
+/* Inputs */
 qty.addEventListener("input", ()=>{
   qty.value = qty.value.replace(/[^0-9.,]/g, "").replace(",", ".");
   clearFieldErrors();
@@ -702,6 +774,7 @@ fmt.addEventListener("change", ()=>{
 });
 obs.addEventListener("input", scheduleAutosave);
 
+/* Cancelar */
 document.getElementById("cancelEdit").onclick = ()=>{
   closeEditor();
   status.textContent = "Edición cancelada";
@@ -709,12 +782,7 @@ document.getElementById("cancelEdit").onclick = ()=>{
   search.focus();
 };
 
-/* === BUSCADOR: SOLO PREFIJO DE DESCRIPCIÓN COMPLETA === */
-function normalize(s){
-  return String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-}
-function isDigits(s){ return /^[0-9]+$/.test(s); }
-
+/* === BUSCADOR TOLERANTE: alias + palabras + typo fallback === */
 search.addEventListener("focus", (e)=>{
   if(blockIfIncomplete()){
     e.preventDefault();
@@ -730,22 +798,51 @@ search.oninput = ()=>{
 
   results.innerHTML="";
   const raw = search.value.trim();
-  const qn = normalize(raw);
+  if(!raw){ results.style.display="none"; return; }
 
-  if(qn.length < 3){
+  if(raw.length < 3){
     results.style.display="none";
     return;
   }
 
-  const matches = ARTICULOS
-    .filter(a=>{
-      const code = normalize(a.c);
-      const desc = normalize(a.d);
-      if(isDigits(qn)) return code.startsWith(qn);
-      return desc.startsWith(qn);
-    })
-    .sort((a,b)=> a.d.localeCompare(b.d, "es"))
+  const qAliased = applyAliases(raw);
+  const qn = normalize(qAliased);
+  const qTokens = qn.split(" ").filter(Boolean);
+
+  // 1) búsqueda normal
+  let matches = ARTICULOS.map(a=>{
+    const code = normalize(a.c);
+    const dt = tokenize(a.d);
+    let s = 0;
+
+    if(isDigits(qn)){
+      if(code.startsWith(qn)) s = 999;
+    } else {
+      s = score(dt, qTokens);
+    }
+    return { ...a, s };
+  }).filter(x=>x.s>0)
+    .sort((a,b)=> b.s - a.s || a.d.localeCompare(b.d,"es"))
     .slice(0, 25);
+
+  // 2) si no hay resultados: typo para 1 palabra (1-2 errores)
+  if(matches.length === 0 && !isDigits(qn) && qTokens.length === 1){
+    const q = qTokens[0];
+    matches = ARTICULOS.map(a=>{
+      const dt = tokenize(a.d).filter(w=>!IGNORE_WORDS.has(w));
+      let best = 99;
+      for(const w of dt){
+        if(w.length < 4) continue;
+        const d = levenshtein(q, w);
+        if(d < best) best = d;
+      }
+      const maxErr = q.length <= 5 ? 1 : 2;
+      const s = best <= maxErr ? (100 - best*10) : 0;
+      return { ...a, s };
+    }).filter(x=>x.s>0)
+      .sort((a,b)=> b.s - a.s || a.d.localeCompare(b.d,"es"))
+      .slice(0, 15);
+  }
 
   matches.forEach(a=>{
     const div=document.createElement("div");
@@ -764,6 +861,7 @@ search.oninput = ()=>{
   results.style.display = results.children.length ? "block" : "none";
 };
 
+/* WhatsApp */
 document.getElementById("wa").onclick=()=>{
   if(actual){
     if(isComplete()) saveNow();
@@ -778,6 +876,7 @@ document.getElementById("wa").onclick=()=>{
   location.href = `https://wa.me/${WHATSAPP}?text=` + encodeURIComponent(msg);
 };
 
+/* Limpiar */
 document.getElementById("clear").onclick=()=>{
   if(actual){
     if(isComplete()) saveNow();
@@ -792,6 +891,7 @@ document.getElementById("clear").onclick=()=>{
   search.focus();
 };
 
+/* INIT */
 renderTable();
 </script>
 </body>
