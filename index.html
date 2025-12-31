@@ -113,7 +113,7 @@
     table{
       width:100%;
       border-collapse:collapse;
-      min-width: 720px;
+      min-width: 780px;
     }
     thead th{
       position: sticky;
@@ -144,13 +144,54 @@
     @media (max-width: 768px){
       #obs{ min-height: 72px; }
     }
+
+    .btn-mini{
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid var(--line);
+      background:#fff;
+      font-weight:700;
+      cursor:pointer;
+      font-size:14px;
+    }
+    .btn-mini.danger{
+      background:#fee2e2;
+      border-color:#dc2626;
+    }
+
+    /* TOAST */
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      background: rgba(15,23,42,.92);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 14px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease, transform .18s ease;
+      z-index: 9999;
+      max-width: calc(100vw - 24px);
+      text-align:center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .toast.show{
+      opacity: 1;
+      transform: translateX(-50%) translateY(-2px);
+    }
   </style>
 </head>
 
 <body>
 <header>
   <h1>Pedido — Cliente 4544</h1>
-  <p class="subtitle">Buscador tolerante a errores + alias. Web sin código, WhatsApp con código.</p>
+  <p class="subtitle">Buscador tolerante a errores + alias. Web sin código, WhatsApp con código. Vista previa con eliminar.</p>
 </header>
 
 <main>
@@ -193,6 +234,7 @@
             <th style="width:90px">Formato</th>
             <th>Descripción</th>
             <th style="width:260px">Observaciones</th>
+            <th style="width:120px">Acción</th>
           </tr>
         </thead>
         <tbody id="pedidoTableBody"></tbody>
@@ -208,13 +250,15 @@
 
 </main>
 
+<div id="toast" class="toast"></div>
+
 <script>
 /* === CONFIG === */
 const WHATSAPP = "663336160";
 const LINK = "https://pascualp.github.io/pedidos-whatsapp/";
 const TAB = "\t";
 
-/* === Alias/sinónimos típicos (amplía cuando detectes casos reales) === */
+/* === Alias/sinónimos típicos === */
 const ALIASES = [
   { from: ["mesclum","mezclun","mezclu","mezcl","mix","mixtura","mezclum"], to: "mezclum" },
   { from: ["rucula","rúcula","rocket"], to: "rucula" },
@@ -225,14 +269,13 @@ const ALIASES = [
   { from: ["pepino","pepin"], to: "pepino" }
 ];
 
-/* Palabras comunes que NO deben dominar el buscador (evita ruido: manojo, mallorca, etc.) */
 const IGNORE_WORDS = new Set([
   "manojo","mallorca","caja","cajas","kilo","kilos","kg","ud","unidad","unidades",
   "bandeja","bandejas","extra","primera","importacion","importación","gr","g","mm",
   "floret","x","por","de","la","el","y","con","sin","del","al"
 ]);
 
-/* === CATÁLOGO COMPLETO (tal cual lo pasaste) === */
+/* === CATÁLOGO === */
 const CATALOGO_RAW = `
 343	MINI ESPARRAGO
 468	BROTES RADICHIO
@@ -551,10 +594,8 @@ const CATALOGO_RAW = `
 3579	MELON AMARILLO
 9979	GARRAFA SUC TARONJA 5L
 7253	CIRUELA ROJA MALLORCA
-300   COL 
 `;
 
-/* Parse catálogo */
 function parseCatalog(raw){
   const items = [];
   raw.split(/\r?\n/).forEach(line=>{
@@ -572,7 +613,7 @@ function parseCatalog(raw){
 const ARTICULOS = parseCatalog(CATALOGO_RAW);
 
 /* === ESTADO === */
-let pedido = [];          // {c,d,q,f,o}
+let pedido = []; // {c,d,q,f,o}
 let actual = null;
 let autosaveTimer = null;
 
@@ -587,8 +628,17 @@ const fmt = document.getElementById("fmt");
 const obs = document.getElementById("obs");
 const status = document.getElementById("status");
 const pedidoTableBody = document.getElementById("pedidoTableBody");
+const toast = document.getElementById("toast");
 
-/* === Helpers generales === */
+let toastTimer = null;
+function showToast(msg){
+  toast.textContent = msg;
+  toast.classList.add("show");
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> toast.classList.remove("show"), 2000);
+}
+
+/* Utils */
 function normalize(s){
   return String(s)
     .toLowerCase()
@@ -607,14 +657,13 @@ function applyAliases(q){
   });
   return out.join(" ");
 }
-function tokenize(desc){
-  return normalize(desc).split(" ").filter(Boolean);
-}
+function tokenize(desc){ return normalize(desc).split(" ").filter(Boolean); }
 function cleanCell(s){ return String(s ?? "").replace(/\t/g," ").replace(/\r?\n/g," ").trim(); }
 function isDigits(s){ return /^[0-9]+$/.test(s); }
 
 function clearFieldErrors(){ qty.classList.remove("field-error"); fmt.classList.remove("field-error"); }
 function isComplete(){ return !!(cleanCell(qty.value) && cleanCell(fmt.value)); }
+
 function showNeedComplete(){
   status.textContent = "⚠️ Completa Cantidad y Formato antes de seguir.";
   status.className = "status bad";
@@ -632,36 +681,7 @@ function blockIfIncomplete(){
   return false;
 }
 
-/* Ranking */
-function score(descTokens, qTokens){
-  let s = 0;
-  for(const qt of qTokens){
-    for(const dt of descTokens){
-      if(IGNORE_WORDS.has(dt)) continue;
-      if(dt === qt) s += 60;
-      else if(dt.startsWith(qt)) s += 35;
-      else if(dt.includes(qt)) s += 10;
-    }
-  }
-  return s;
-}
-
-/* Levenshtein (solo para 1 token y solo si no hay resultados) */
-function levenshtein(a,b){
-  const m=a.length, n=b.length;
-  const dp = Array.from({length:m+1}, ()=>Array(n+1).fill(0));
-  for(let i=0;i<=m;i++) dp[i][0]=i;
-  for(let j=0;j<=n;j++) dp[0][j]=j;
-  for(let i=1;i<=m;i++){
-    for(let j=1;j<=n;j++){
-      const cost = a[i-1]===b[j-1] ? 0 : 1;
-      dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost);
-    }
-  }
-  return dp[m][n];
-}
-
-/* WhatsApp: CON CÓDIGO (TAB para Excel) */
+/* WhatsApp */
 function buildMessage(){
   const lines = [];
   lines.push(["Cantidad","Formato","Código","Descripción","Observaciones"].join(TAB));
@@ -673,15 +693,16 @@ function buildMessage(){
   return lines.join("\n");
 }
 
-/* Tabla web SIN CÓDIGO */
+/* Tabla */
 function renderTable(){
   pedidoTableBody.innerHTML = "";
   if(!pedido.length){
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="4" class="muted" style="padding:14px">No hay artículos añadidos todavía.</td>`;
+    tr.innerHTML = `<td colspan="5" class="muted" style="padding:14px">No hay artículos añadidos todavía.</td>`;
     pedidoTableBody.appendChild(tr);
     return;
   }
+
   pedido.forEach(p=>{
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -689,11 +710,28 @@ function renderTable(){
       <td>${cleanCell(p.f)}</td>
       <td>${cleanCell(p.d)}</td>
       <td>${cleanCell(p.o||"")}</td>
+      <td><button class="btn-mini danger" data-code="${p.c}">🗑 Eliminar</button></td>
     `;
     pedidoTableBody.appendChild(tr);
   });
+
+  pedidoTableBody.querySelectorAll("button[data-code]").forEach(btn=>{
+    btn.onclick = ()=>{
+      if(actual){
+        if(isComplete()) saveNow();
+        else { showNeedComplete(); return; }
+      }
+      const code = btn.getAttribute("data-code");
+      pedido = pedido.filter(p=>p.c !== code);
+      status.textContent = "Artículo eliminado";
+      status.className = "status warn";
+      showToast("🗑 Artículo eliminado");
+      renderTable();
+    };
+  });
 }
 
+/* Editor */
 function closeEditor(){
   actual = null;
   if(autosaveTimer){ clearTimeout(autosaveTimer); autosaveTimer = null; }
@@ -763,7 +801,6 @@ function scheduleAutosave(){
   }, 700);
 }
 
-/* Inputs */
 qty.addEventListener("input", ()=>{
   qty.value = qty.value.replace(/[^0-9.,]/g, "").replace(",", ".");
   clearFieldErrors();
@@ -775,7 +812,6 @@ fmt.addEventListener("change", ()=>{
 });
 obs.addEventListener("input", scheduleAutosave);
 
-/* Cancelar */
 document.getElementById("cancelEdit").onclick = ()=>{
   closeEditor();
   status.textContent = "Edición cancelada";
@@ -783,7 +819,33 @@ document.getElementById("cancelEdit").onclick = ()=>{
   search.focus();
 };
 
-/* === BUSCADOR TOLERANTE: alias + palabras + typo fallback === */
+/* Buscador */
+function score(descTokens, qTokens){
+  let s = 0;
+  for(const qt of qTokens){
+    for(const dt of descTokens){
+      if(IGNORE_WORDS.has(dt)) continue;
+      if(dt === qt) s += 60;
+      else if(dt.startsWith(qt)) s += 35;
+      else if(dt.includes(qt)) s += 10;
+    }
+  }
+  return s;
+}
+function levenshtein(a,b){
+  const m=a.length, n=b.length;
+  const dp = Array.from({length:m+1}, ()=>Array(n+1).fill(0));
+  for(let i=0;i<=m;i++) dp[i][0]=i;
+  for(let j=0;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      const cost = a[i-1]===b[j-1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost);
+    }
+  }
+  return dp[m][n];
+}
+
 search.addEventListener("focus", (e)=>{
   if(blockIfIncomplete()){
     e.preventDefault();
@@ -800,17 +862,11 @@ search.oninput = ()=>{
   results.innerHTML="";
   const raw = search.value.trim();
   if(!raw){ results.style.display="none"; return; }
+  if(raw.length < 3){ results.style.display="none"; return; }
 
-  if(raw.length < 3){
-    results.style.display="none";
-    return;
-  }
-
-  const qAliased = applyAliases(raw);
-  const qn = normalize(qAliased);
+  const qn = normalize(applyAliases(raw));
   const qTokens = qn.split(" ").filter(Boolean);
 
-  // 1) búsqueda normal
   let matches = ARTICULOS.map(a=>{
     const code = normalize(a.c);
     const dt = tokenize(a.d);
@@ -826,7 +882,6 @@ search.oninput = ()=>{
     .sort((a,b)=> b.s - a.s || a.d.localeCompare(b.d,"es"))
     .slice(0, 25);
 
-  // 2) si no hay resultados: typo para 1 palabra (1-2 errores)
   if(matches.length === 0 && !isDigits(qn) && qTokens.length === 1){
     const q = qTokens[0];
     matches = ARTICULOS.map(a=>{
@@ -862,7 +917,7 @@ search.oninput = ()=>{
   results.style.display = results.children.length ? "block" : "none";
 };
 
-/* WhatsApp */
+/* Botones */
 document.getElementById("wa").onclick=()=>{
   if(actual){
     if(isComplete()) saveNow();
@@ -871,13 +926,12 @@ document.getElementById("wa").onclick=()=>{
   if(!pedido.length){
     status.textContent = "Pedido vacío";
     status.className = "status warn";
+    showToast("Pedido vacío");
     return;
   }
-  const msg = buildMessage();
-  location.href = `https://wa.me/${WHATSAPP}?text=` + encodeURIComponent(msg);
+  location.href = `https://wa.me/${WHATSAPP}?text=` + encodeURIComponent(buildMessage());
 };
 
-/* Limpiar */
 document.getElementById("clear").onclick=()=>{
   if(actual){
     if(isComplete()) saveNow();
@@ -887,6 +941,7 @@ document.getElementById("clear").onclick=()=>{
   closeEditor();
   status.textContent="Pedido limpiado";
   status.className = "status warn";
+  showToast("Pedido limpiado");
   renderTable();
   search.value="";
   search.focus();
@@ -897,4 +952,3 @@ renderTable();
 </script>
 </body>
 </html>
-
